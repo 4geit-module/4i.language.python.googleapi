@@ -1,0 +1,150 @@
+.template 0
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 3
+# as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+#
+# Authors:
+# Caner Candan <caner@candan.fr>, http://caner.candan.fr
+#
+
+echo "GAPI PRE COMBINE"
+
+if !defined(projectnode.oauth_scope)
+  projectnode.oauth_scope = project.oauth_scope
+endif
+
+if !defined(projectnode.redirect_uri)
+  projectnode.redirect_uri = project.redirect_uri
+endif
+
+parentnode = projectnode.parent()
+
+new parentnode.output as o
+  o.name = projectnode.name
+  o.binary = "True"
+
+  new o.stmt as s
+    define s. = "import httplib2"
+  endnew
+
+  new o.stmt as s
+    define s. = "import pprint"
+  endnew
+
+  new o.newline
+  endnew
+
+  new o.stmt as s
+    define s. = "from apiclient.discovery import build"
+  endnew
+
+  new o.stmt as s
+    define s. = "from apiclient.http import MediaFileUpload"
+  endnew
+
+  new o.stmt as s
+    define s. = "from oauth2client.client import OAuth2WebServerFlow"
+  endnew
+
+  new o.newline
+  endnew
+
+  new o.comment as c
+    define c. = "Copy your credentials from the console"
+  endnew
+
+  new o.stmt as s
+    define s. = "CLIENT_ID = '$(project.client_id:)'"
+  endnew
+
+  new o.stmt as s
+    define s. = "CLIENT_SECRET = '$(project.client_secret:)'"
+  endnew
+
+  new o.newline
+  endnew
+
+  new o.comment as c
+    define c. = "Check https://developers.google.com/drive/scopes for all available scopes"
+  endnew
+
+  new o.stmt as s
+    define s. = "OAUTH_SCOPE = '$(projectnode.oauth_scope:)'"
+  endnew
+
+  new o.newline
+  endnew
+
+  new o.comment as c
+    define c. = "Redirect URI for installed apps"
+  endnew
+
+  new o.stmt as s
+    define s. = "REDIRECT_URI = '$(projectnode.redirect_uri:)'"
+  endnew
+
+  new o.main as m
+
+    new m.comment as c
+      define c. = "Run through the OAuth flow and retrieve credentials"
+    endnew
+
+    new m.stmt as s
+      define s. = "flow = OAuth2WebServerFlow(CLIENT_ID, CLIENT_SECRET, OAUTH_SCOPE, redirect_uri=REDIRECT_URI)"
+    endnew
+
+    new m.stmt as s
+      define s. = "authorize_url = flow.step1_get_authorize_url()"
+    endnew
+
+    new m.stmt as s
+      define s. = "print 'Go to the following link in your browser: ' + authorize_url"
+    endnew
+
+    new m.stmt as s
+      define s. = "code = raw_input('Enter verification code: ').strip()"
+    endnew
+
+    new m.stmt as s
+      define s. = "credentials = flow.step2_exchange(code)"
+    endnew
+
+    new m.newline
+    endnew
+
+    new m.comment as c
+      define c. = "Create an httplib2.Http object and authorize it with our credentials"
+    endnew
+
+    new m.stmt as s
+      define s. = "http = httplib2.Http()"
+    endnew
+
+    new m.stmt as s
+      define s. = "http = credentials.authorize(http)"
+    endnew
+
+    new m.newline
+    endnew
+
+    for projectnode.service as sv
+      new m.stmt as s
+        define s. = "$(sv.name)_service = build('$(sv.name)', '$(sv.version)', http=http)"
+      endnew
+    endfor
+
+  endnew
+
+endnew
+
+.endtemplate
