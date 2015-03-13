@@ -17,8 +17,6 @@
 # Caner Candan <caner@candan.fr>, http://caner.candan.fr
 #
 
-echo "GAPI PRE COMBINE"
-
 if !defined(projectnode.oauth_scope)
   projectnode.oauth_scope = project.oauth_scope
 endif
@@ -49,11 +47,15 @@ new parentnode.output as o
   endnew
 
   new o.stmt as s
-    define s. = "from apiclient.http import MediaFileUpload"
+    define s. = "from oauth2client.file import Storage"
   endnew
 
   new o.stmt as s
-    define s. = "from oauth2client.client import OAuth2WebServerFlow"
+    define s. = "from oauth2client.client import AccessTokenRefreshError, OAuth2WebServerFlow"
+  endnew
+
+  new o.stmt as s
+    define s. = "from oauth2client.tools import run"
   endnew
 
   new o.newline
@@ -104,19 +106,19 @@ new parentnode.output as o
     endnew
 
     new m.stmt as s
-      define s. = "authorize_url = flow.step1_get_authorize_url()"
+      define s. = "storage = Storage('credentials.dat')"
     endnew
 
     new m.stmt as s
-      define s. = "print 'Go to the following link in your browser: ' + authorize_url"
+      define s. = "credentials = storage.get()"
     endnew
 
     new m.stmt as s
-      define s. = "code = raw_input('Enter verification code: ').strip()"
+      define s. = "if credentials is None or credentials.invalid:"
     endnew
 
     new m.stmt as s
-      define s. = "credentials = flow.step2_exchange(code)"
+      define s. = "    credentials = run(flow, storage)"
     endnew
 
     new m.newline
@@ -138,9 +140,30 @@ new parentnode.output as o
     endnew
 
     for projectnode.service as sv
+      gsl from "services/files_copy.gsl"
+    endfor
+
+    for projectnode.service as sv
       new m.stmt as s
         define s. = "$(sv.name)_service = build('$(sv.name)', '$(sv.version)', http=http)"
       endnew
+
+      for sv.action as a
+        new m.stmt as s
+          define s. = "$(sv.name)_service.$(a.resource)().$(a.name)("
+          for a.parameter as p
+            s. += "$(p.name:)='$(p.:)', "
+          endfor
+          if defined(a->property)
+            s. += "body={ "
+            for a.property as p
+              s. += "'$(p.name:)': \"\"\"$(p.:)\"\"\", "
+            endfor
+            s. += "}"
+          endif
+          s. += ").execute()"
+        endnew
+      endfor
     endfor
 
   endnew

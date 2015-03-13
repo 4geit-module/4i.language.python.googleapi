@@ -1,0 +1,19 @@
+.template 0
+
+for sv.files_copy as fc
+  new sv.action as a
+    define a.resource = 'files'
+    define a.name = 'copy'
+    
+    new a.parameter as p
+      define p.name = 'fileId'
+      define p. = fc.fileId
+    endnew
+    
+    for fc.property as p
+      copy p to a
+    endfor
+  endnew
+endfor
+
+.endtemplate
