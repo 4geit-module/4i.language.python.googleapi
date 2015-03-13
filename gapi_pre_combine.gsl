@@ -39,6 +39,10 @@ new parentnode.output as o
     define s. = "import pprint"
   endnew
 
+  new o.stmt as s
+    define s. = "import gspread"
+  endnew
+
   new o.newline
   endnew
 
@@ -162,12 +166,12 @@ new parentnode.output as o
             s. += "}"
           endif
           s. += ").execute()"
-        endnew
-      endfor
-    endfor
+        endnew # !stmt
+      endfor # !action
+    endfor # !service
 
-  endnew
+  endnew # !main
 
-endnew
+endnew # !output
 
 .endtemplate

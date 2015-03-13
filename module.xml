@@ -4,6 +4,7 @@
 
   <require name="google-api-python-client" version="1.3.2"/>
   <require name="python-gflags" version="2.0"/>
+  <require name="gspread" version="0.2.2"/>
 
   <resource url="https://developers.google.com/api-client-library/python/start/get_started#examples"/>
   <resource url="http://developers.google.com/apis-explorer/#p/drive/v2/"/>
@@ -25,18 +26,18 @@
 	  <attribute name="name" required="True"/>
 	  <node name="parameter" number="*">
 	    <attribute name="name" required="True"/>
-	  </node>
+	  </node> <!-- !parameter -->
 	  <node name="property" number="*">
 	    <attribute name="name" required="True"/>
-	  </node>
-	</node>
+	  </node> <!-- !property -->
+	</node> <!-- !action -->
 	<node name="files_copy" number="*">
 	  <attribute name="fileId" required="True"/>
 	  <node name="property" number="*">
 	    <attribute name="name" required="True"/>
-	  </node>
-	</node>
+	  </node> <!-- !property -->
+	</node> <!-- !files_copy -->
       </node>
-    </node>
-  </node>
+    </node> <!-- !gapi -->
+  </node> <!-- !project -->
 </module>
