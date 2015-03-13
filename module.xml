@@ -18,6 +18,10 @@
       <attribute name="name" required="True"/>
       <attribute name="oauth_scope" required="True" default="https://www.googleapis.com/auth/drive"/>
       <attribute name="redirect_uri" required="True" default="urn:ietf:wg:oauth:2.0:oob"/>
+      <node name="import" number="*">
+	<attribute name="name" required="True"/>
+	<attribute name="version"/>
+      </node> <!-- !import -->
       <node name="service" number="*">
 	<attribute name="name" required="True"/>
 	<attribute name="version" required="True"/>
@@ -33,10 +37,18 @@
 	</node> <!-- !action -->
 	<node name="files_copy" number="*">
 	  <attribute name="fileId" required="True"/>
+	  <attribute name="id"/>
 	  <node name="property" number="*">
 	    <attribute name="name" required="True"/>
 	  </node> <!-- !property -->
 	</node> <!-- !files_copy -->
+      </node> <!-- !service -->
+      <node name="spreadsheets" number="*">
+	<attribute name="ref" required="True"/>
+	<node name="update" number="*">
+	  <attribute name="key" required="True"/>
+	  <attribute name="value" required="True"/>
+	</node>
       </node>
     </node> <!-- !gapi -->
   </node> <!-- !project -->

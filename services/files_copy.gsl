@@ -4,6 +4,9 @@ for sv.files_copy as fc
   new sv.action as a
     define a.resource = 'files'
     define a.name = 'copy'
+    if defined(fc.id)
+      define a.id = fc.id
+    endif
     
     new a.parameter as p
       define p.name = 'fileId'

@@ -25,7 +25,42 @@ if !defined(projectnode.redirect_uri)
   projectnode.redirect_uri = project.redirect_uri
 endif
 
+for projectnode.service as sv
+  gsl from "services/files_copy.gsl"
+endfor
+
 parentnode = projectnode.parent()
+
+function add_service(oauth_scope, name)
+  my.name ?= i.name
+
+    new m.comment as c
+      define c. = "Run through the OAuth flow and retrieve credentials"
+    endnew
+
+    new m.stmt as s
+      define s. = "$(my.name)_flow = OAuth2WebServerFlow(CLIENT_ID, CLIENT_SECRET, '$(my.oauth_scope:)', redirect_uri=REDIRECT_URI)"
+    endnew
+
+    new m.stmt as s
+      define s. = "$(my.name)_storage = Storage('credentials_$(my.name).dat')"
+    endnew
+
+    new m.stmt as s
+      define s. = "$(my.name)_credentials = $(my.name)_storage.get()"
+    endnew
+
+    new m.stmt as s
+      define s. = "if $(my.name)_credentials is None or $(my.name)_credentials.invalid:"
+    endnew
+
+    new m.stmt as s
+      define s. = "    $(my.name)_credentials = run($(my.name)_flow, $(my.name)_storage)"
+    endnew
+
+    new m.newline
+    endnew
+endfunction
 
 new parentnode.output as o
   o.name = projectnode.name
@@ -80,16 +115,16 @@ new parentnode.output as o
   new o.newline
   endnew
 
-  new o.comment as c
-    define c. = "Check https://developers.google.com/drive/scopes for all available scopes"
-  endnew
+  # new o.comment as c
+  #   define c. = "Check https://developers.google.com/drive/scopes for all available scopes"
+  # endnew
 
-  new o.stmt as s
-    define s. = "OAUTH_SCOPE = '$(projectnode.oauth_scope:)'"
-  endnew
+  # new o.stmt as s
+  #   define s. = "OAUTH_SCOPE = '$(projectnode.oauth_scope:)'"
+  # endnew
 
-  new o.newline
-  endnew
+  # new o.newline
+  # endnew
 
   new o.comment as c
     define c. = "Redirect URI for installed apps"
@@ -101,60 +136,51 @@ new parentnode.output as o
 
   new o.main as m
 
-    new m.comment as c
-      define c. = "Run through the OAuth flow and retrieve credentials"
-    endnew
+    for projectnode.import as i where defined(i.version)
+      add_service('https://www.googleapis.com/auth/$(i.name)')
 
-    new m.stmt as s
-      define s. = "flow = OAuth2WebServerFlow(CLIENT_ID, CLIENT_SECRET, OAUTH_SCOPE, redirect_uri=REDIRECT_URI)"
-    endnew
+      new m.comment as c
+        define c. = "Create an httplib2.Http object and authorize it with our credentials"
+      endnew
 
-    new m.stmt as s
-      define s. = "storage = Storage('credentials.dat')"
-    endnew
+      new m.stmt as s
+        define s. = "$(i.name)_http = httplib2.Http()"
+      endnew
 
-    new m.stmt as s
-      define s. = "credentials = storage.get()"
-    endnew
+      new m.stmt as s
+        define s. = "$(i.name)_http = $(i.name)_credentials.authorize($(i.name)_http)"
+      endnew
 
-    new m.stmt as s
-      define s. = "if credentials is None or credentials.invalid:"
-    endnew
+      new m.newline
+      endnew
 
-    new m.stmt as s
-      define s. = "    credentials = run(flow, storage)"
-    endnew
+      new m.stmt as s
+        define s. = "$(i.name)_service = build('$(i.name)', '$(i.version)', http=$(i.name)_http)"
+      endnew
 
-    new m.newline
-    endnew
+      new m.newline
+      endnew
+    endfor
 
-    new m.comment as c
-      define c. = "Create an httplib2.Http object and authorize it with our credentials"
-    endnew
+    for projectnode.import as i where i.name = 'spreadsheets'
+      add_service('https://spreadsheets.google.com/feeds https://docs.google.com/feeds', 'spreadsheets')
 
-    new m.stmt as s
-      define s. = "http = httplib2.Http()"
-    endnew
+      new m.stmt as s
+        define s. = "$(i.name)_gc = gspread.authorize($(i.name)_credentials)"
+      endnew
 
-    new m.stmt as s
-      define s. = "http = credentials.authorize(http)"
-    endnew
-
-    new m.newline
-    endnew
-
-    for projectnode.service as sv
-      gsl from "services/files_copy.gsl"
+      new m.newline
+      endnew
     endfor
 
     for projectnode.service as sv
-      new m.stmt as s
-        define s. = "$(sv.name)_service = build('$(sv.name)', '$(sv.version)', http=http)"
-      endnew
 
       for sv.action as a
         new m.stmt as s
-          define s. = "$(sv.name)_service.$(a.resource)().$(a.name)("
+          if defined(a.id)
+            variable = "$(a.id:) = "
+          endif
+          define s. = "$(variable?'':)$(sv.name)_service.$(a.resource)().$(a.name)("
           for a.parameter as p
             s. += "$(p.name:)='$(p.:)', "
           endfor
@@ -169,6 +195,22 @@ new parentnode.output as o
         endnew # !stmt
       endfor # !action
     endfor # !service
+
+    for projectnode.spreadsheets as ss
+      new m.stmt as s
+        define s. = "print $(ss.ref:)"
+      endnew
+      
+      new m.stmt as s
+        define s. = "wks = spreadsheets_gc.open_by_key($(ss.ref:)).sheet1"
+      endnew
+
+      for ss.update as u
+        new m.stmt as s
+          define s. = "wks.update_acell('$(u.key:)', \"\"\"$(u.value:)\"\"\")"
+        endnew
+      endfor
+    endfor
 
   endnew # !main
 
